@@ -3,12 +3,8 @@
 # @Email   : 13784197113@163.com
 # File     : main.py
 # Software : PyCharm
-from flask import Flask, request, render_template
-
-app = Flask(__name__)
-
-# 先用字典储存测试，日后移交数据库
-user_pwd = {}
+from database import app, db, User
+from flask import request, render_template
 
 
 @app.route('/login/', methods=['GET', 'POST'])
@@ -19,9 +15,11 @@ def login():
         # 获取前端传来的值
         username = request.form.get('username')
         password = request.form.get('password')
-        if username in user_pwd and password == user_pwd[username]:
-            return render_template('index.html')
+        u = User.query.filter_by(username=username).first()
+        if u.password == password:
+            return render_template('countentPage.html')
         else:
+            # 前端提示密码输入错误
             return render_template('login.html')
 
 
@@ -34,12 +32,19 @@ def register():
         password = request.form.get('password')
         password2 = request.form.get('password2')
 
-        print(password, password2)
+        print(username, password, password2)
 
         if password == password2:
-            user_pwd[username] = password
-            return render_template('login.html')
+            u = User.query.filter_by(username=username).all()
+            if not u:   # 代表当前注册的用户名不存在，可以注册
+                user_new = User(username, password)
+                db.session.add(user_new)
+                db.session.commit()
+                return render_template('login.html')
+            else:
+                return "该用户名已存在"
         else:
+            # 这里应前端提示两次密码输入不一致
             return render_template('register.html')
 
 
